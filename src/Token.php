@@ -64,7 +64,9 @@ class Token
 
   public function toToken($payload, $password = null) {
 
-    $this->jws->setPayload($payload)->sign($this->secret, $password);
+    $sign = $this->jws->setPayload($payload)->sign($this->secret, $password);
+
+    echo $sign; exit;
 
   }
 
