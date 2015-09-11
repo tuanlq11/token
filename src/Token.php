@@ -113,8 +113,10 @@ class Token
    * @param $token
    * @return bool|User
    */
-  public function fromToken($token)
+  public function fromToken($token = null)
   {
+    $token = $token?$token:\Input::get('token');
+
     $key = self::PREFIX_CACHE_KEY . $token;
 
     if (\Cache::has($key)) {
