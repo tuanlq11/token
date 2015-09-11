@@ -55,7 +55,7 @@ class Token
       return false;
     }
 
-    $user = User::whereEmail($credentials[$this->identify]);
+    $user = User::whereEmail($credentials[$this->identify])->first();
 
     $payload = [
       'uid' => $user->{$this->identify},
