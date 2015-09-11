@@ -1,6 +1,7 @@
 <?php
 
 namespace tuanlq11\token;
+
 use App\User;
 use Carbon\Carbon;
 use tuanlq11\token\signer\Signer;
@@ -12,7 +13,7 @@ use tuanlq11\token\signer\Signer;
  */
 class Token
 {
-  /** @var Signer  */
+  /** @var Signer */
   protected $jws;
 
   /** @var  JWT */
@@ -51,7 +52,8 @@ class Token
   /**
    * Generate new salt
    */
-  protected function generateSalt($uid) {
+  protected function generateSalt($uid)
+  {
     return md5($uid) . hash_hmac('sha256', str_random(32) . time() . $this->secret, str_random());
   }
 
@@ -83,15 +85,15 @@ class Token
    * @param $token
    * @return bool|User
    */
-  public function fromToken($token) {
+  public function fromToken($token)
+  {
     $key = self::PREFIX_CACHE_KEY . $token;
 
-    if(\Cache::has($token)) {
+    if (\Cache::has($token)) {
       return false;
     }
 
-    if(($payload = $this->jws->verify($token, $this->secret)))
-    {
+    if (($payload = $this->jws->verify($token, $this->secret))) {
       return User::where($this->identify, '=', $payload['uid'])->first();
     }
 
@@ -102,9 +104,10 @@ class Token
    * @param $token
    * @return bool
    */
-  public function refresh($token) {
-    if($user = $this->fromToken($token)) {
-      $newToken = $this->attempt(array_only($user->toArray(), [$this->identify, 'password']));
+  public function refresh($token)
+  {
+    if ($user = $this->fromToken($token)) {
+      $newToken = $this->attempt([$this->identify => $user->{$this->identify}, 'password' => $user->password]);
 
       // Blacklist
       $key = self::PREFIX_CACHE_KEY . $token;
@@ -122,7 +125,8 @@ class Token
    * @param $payload
    * @return string
    */
-  public function toToken($payload) {
+  public function toToken($payload)
+  {
     $this->jws->setHeader($this->header);
     $this->jws->setPayload($payload);
     $this->jws->sign($this->secret);
