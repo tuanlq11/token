@@ -46,6 +46,13 @@ class Token
   }
 
   /**
+   * Generate new salt
+   */
+  protected function generateSalt() {
+    return hash_hmac('sha256', str_random(32) . time() . $this->secret, str_random());
+  }
+
+  /**
    * Authenticate Credentials and generate token
    * @param $credentials
    * @return bool
@@ -61,7 +68,8 @@ class Token
     $payload = [
       'uid' => $user->{$this->identify},
       'exp' => time() + $this->ttl,
-      'domain' => \Request::root()
+      'domain' => \Request::root(),
+      'salt' => $this->generateSalt()
     ];
 
     return $this->toToken($payload);

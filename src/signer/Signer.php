@@ -25,6 +25,9 @@ class Signer
   /** @var  string */
   protected $signature;
 
+  /** @var  string */
+  protected $salt;
+
   /**
    * Return new signer class
    */
@@ -98,7 +101,7 @@ class Signer
    */
   public function sign($key)
   {
-    $this->signature = $this->encoder->sign($this->payload, $key);
+    $this->signature = $this->encoder->sign(json_encode($this->payload), $key);
     return $this->signature;
   }
 
