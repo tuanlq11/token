@@ -29,12 +29,16 @@ class Token
   /** @var  String */
   protected $secret;
 
+  /** @var  Integer */
+  protected $ttl;
+
   function __construct()
   {
     $this->alg = \Config::get('token.alg');
     $this->identify = \Config::get('token.identify');
     $this->header = ['alg' => $this->alg];
     $this->secret = \Config::get('token.secret');
+    $this->ttl = \Config::get('token.ttl');
 
     $this->jws = new JWS($this->header);
 
@@ -53,7 +57,11 @@ class Token
 
     $user = User::whereEmail($credentials[$this->identify]);
 
-    $payload = ['uid' => $user->{$this->identify}, 'alg' => \Config::get('token.')];
+    $payload = [
+      'uid' => $user->{$this->identify},
+      'exp' => time() + $this->ttl,
+      'domain' => \Request::root()
+    ];
 
     return $this->toToken($payload, $user->password);
   }
@@ -63,11 +71,16 @@ class Token
   }
 
   public function toToken($payload, $password = null) {
-
+    $header = ['alg' => $this->alg];
     $sign = $this->jws->setPayload($payload)->sign($this->secret, $password);
 
-    echo $sign; exit;
+    $token = sprintf('%s.%s.%s',
+      base64_encode(json_encode($header)),
+      base64_encode(json_encode($payload)),
+      base64_encode($sign)
+      );
 
+    return $token;
   }
 
 }
