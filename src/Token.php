@@ -67,20 +67,14 @@ class Token
   }
 
   public function fromToken() {
-
   }
 
   public function toToken($payload, $password = null) {
-    $header = ['alg' => $this->alg];
-    $sign = $this->jws->setPayload($payload)->sign($this->secret, $password);
+    $this->jws->setHeader($this->header);
+    $this->jws->setPayload($payload);
+    $this->jws->sign($this->secret, $password);
 
-    $token = sprintf('%s.%s.%s',
-      base64_encode(json_encode($header)),
-      base64_encode(json_encode($payload)),
-      base64_encode($sign)
-      );
-
-    return $token;
+    return $this->jws->getTokenString();
   }
 
 }
