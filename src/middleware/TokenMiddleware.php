@@ -13,7 +13,7 @@ use Closure;
  */
 class TokenMiddleware
 {
-  public function handle(\Request $request, Closure $next)
+  public function handle($request, Closure $next)
   {
     $token = $request->get('_token', false);
     if (!$token) {
