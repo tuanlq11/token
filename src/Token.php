@@ -71,14 +71,27 @@ class Token
     $user = User::whereEmail($credentials[$this->identify])->first();
     $uid = $user->{$this->identify};
 
+    $payload = $this->getPayload($uid, time() + $this->ttl);
+
+    return $this->toToken($payload);
+  }
+
+  /**
+   * Generate new Payload
+   * @param $uid
+   * @param $exp
+   * @return array
+   */
+  protected function getPayload($uid, $exp)
+  {
     $payload = [
       'uid' => $uid,
-      'exp' => time() + $this->ttl,
+      'exp' => $exp,
       'domain' => \Request::root(),
       'salt' => $this->generateSalt($uid)
     ];
 
-    return $this->toToken($payload);
+    return $payload;
   }
 
   /**
@@ -89,7 +102,7 @@ class Token
   {
     $key = self::PREFIX_CACHE_KEY . $token;
 
-    if (\Cache::has($token)) {
+    if (\Cache::has($key)) {
       return false;
     }
 
@@ -107,7 +120,9 @@ class Token
   public function refresh($token)
   {
     if ($user = $this->fromToken($token)) {
-      $newToken = $this->attempt([$this->identify => $user->{$this->identify}, 'password' => $user->password]);
+      $uid = $user->{$this->identify};
+      $payload = $this->getPayload($uid, time() + $this->ttl);
+      $newToken = $this->toToken($payload);
 
       // Blacklist
       $key = self::PREFIX_CACHE_KEY . $token;
