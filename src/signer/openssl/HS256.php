@@ -7,7 +7,7 @@ namespace tuanlq11\token\signer\openssl;
  * Date: 9/11/15
  * Time: 10:45 AM
  */
-class HS512 extends HMac
+class HS256 extends HMac
 {
   public function getAlg()
   {
