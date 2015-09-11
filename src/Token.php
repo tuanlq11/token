@@ -2,6 +2,7 @@
 
 namespace tuanlq11\token;
 use App\User;
+use Carbon\Carbon;
 use tuanlq11\token\signer\Signer;
 
 /**
@@ -48,8 +49,8 @@ class Token
   /**
    * Generate new salt
    */
-  protected function generateSalt() {
-    return hash_hmac('sha256', str_random(32) . time() . $this->secret, str_random());
+  protected function generateSalt($uid) {
+    return md5($uid) . hash_hmac('sha256', str_random(32) . time() . $this->secret, str_random());
   }
 
   /**
@@ -64,24 +65,54 @@ class Token
     }
 
     $user = User::whereEmail($credentials[$this->identify])->first();
+    $uid = $user->{$this->identify};
 
     $payload = [
-      'uid' => $user->{$this->identify},
+      'uid' => $uid,
       'exp' => time() + $this->ttl,
       'domain' => \Request::root(),
-      'salt' => $this->generateSalt()
+      'salt' => $this->generateSalt($uid)
     ];
 
     return $this->toToken($payload);
   }
 
   /**
-   * Authenticate token and export User from token
    * @param $token
-   * @return bool|array
+   * @return bool|User
    */
   public function fromToken($token) {
-    return $this->jws->verify($token, $this->secret);;
+    $key = 'tuanlq11.token.blacklist.' . $token;
+    
+    if(\Cache::has($token)) {
+      return false;
+    }
+
+    if(($payload = $this->jws->verify($token, $this->secret)))
+    {
+      return User::where($this->identify, '=', $payload['uid'])->first();
+    }
+
+    return false;
+  }
+
+  /**
+   * @param $token
+   * @return bool
+   */
+  public function refresh($token) {
+    if($user = $this->fromToken($token)) {
+      $newToken = $this->attempt(array_only($user->toArray(), [$this->identify, 'password']));
+
+      // Blacklist
+      $key = 'tuanlq11.token.blacklist.' . $token;
+      \Cache::put($key, [], Carbon::now()->addSecond($this->ttl));
+      // End
+
+      return $newToken;
+    }
+
+    return false;
   }
 
   /**
