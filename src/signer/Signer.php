@@ -144,7 +144,7 @@ class Signer
     $alg = $header['alg'];
     $encoder = $this->getSigner($alg);
 
-    if ($encoder->verify($secret, $signInput, $payloadJSON) && $payload['exp'] > time()) {
+    if ($encoder->verify($secret, $signInput, $payloadJSON) && $payload['exp'] > time() && $payload['domain'] == \Request::root()) {
       return $payload;
     }
 
