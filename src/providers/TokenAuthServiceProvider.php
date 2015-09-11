@@ -1,11 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: archlinux
- * Date: 9/11/15
- * Time: 7:56 AM
- */
-
 namespace tuanlq11\token;
 
 use Illuminate\Support\ServiceProvider;
