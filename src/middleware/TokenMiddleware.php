@@ -16,7 +16,7 @@ class TokenMiddleware
   public function handle($request, Closure $next)
   {
     $token = $request->get('token', false);
-    
+
     if (!$token) {
       return \Response::json(['error' => 'Token is empty.']);
     }

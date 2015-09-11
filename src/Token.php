@@ -49,6 +49,21 @@ class Token
     return $this;
   }
 
+  /** @var  Token */
+  private static $instance;
+
+  /**
+   * Generate instance for static
+   * @return Token
+   */
+  public static function getInstance() {
+    if(self::$instance == null){
+      self::$instance = new Token();
+    }
+
+    return self::$instance;
+  }
+
   /**
    * Generate new salt
    */
