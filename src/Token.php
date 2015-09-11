@@ -78,19 +78,10 @@ class Token
   /**
    * Authenticate token and export User from token
    * @param $token
-   * @return null
+   * @return bool|array
    */
   public function fromToken($token) {
-    $jws = JWS::load($token);
-
-    if(!$jws->verify($this->secret)) {
-      return null;
-    }
-
-    $payload = $jws->getPayload();
-    $user = User::where($this->identify, '=', $payload['uid'])->first();
-
-    return $user;
+    return $this->jws->verify($token, $this->secret);;
   }
 
   /**

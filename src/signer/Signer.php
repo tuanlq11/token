@@ -105,13 +105,49 @@ class Signer
     return $this->signature;
   }
 
-  public function getTokenString() {
+  /**
+   * Export token after sign
+   * @return string
+   */
+  public function getTokenString()
+  {
     $token = sprintf('%s.%s.%s',
       base64_encode(json_encode($this->getHeader())),
       base64_encode(json_encode($this->getPayload())),
-      base64_encode(json_encode($this->getSignature()))
+      base64_encode($this->getSignature())
     );
 
     return $token;
+  }
+
+  /**
+   * @param $input
+   * @param $key
+   * @return bool|mixed
+   */
+  public function verify($token, $secret)
+  {
+    $parts = explode('.', $token);
+
+    if (count($parts) != 3) {
+      return false;
+    }
+
+    $header = json_decode(base64_decode($parts[0]), true);
+    $payloadJSON = base64_decode($parts[1]);
+    $payload = json_decode($payloadJSON, true);
+    $signInput = base64_decode($parts[2]);
+
+    if (!isset($header['alg'])) {
+      return false;
+    }
+    $alg = $header['alg'];
+    $encoder = $this->getSigner($alg);
+
+    if ($encoder->verify($secret, $signInput, $payloadJSON)) {
+      return $payload;
+    }
+
+    return false;
   }
 }
