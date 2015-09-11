@@ -74,7 +74,7 @@ class Token
     }
 
     $payload = $jws->getPayload();
-    $user = User::where($this->identify, '=', $payload['uid']);
+    $user = User::where($this->identify, '=', $payload['uid'])->first();
 
     return $user;
   }
