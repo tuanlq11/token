@@ -1,5 +1,5 @@
 <?php
-namespace tuanlq11\token;
+namespace tuanlq11\token\providers;
 
 use Illuminate\Support\ServiceProvider;
 
