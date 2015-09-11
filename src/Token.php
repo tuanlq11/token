@@ -48,6 +48,7 @@ class Token
   }
 
   /**
+   * Authenticate Credentials and generate token
    * @param $credentials
    * @return bool
    */
@@ -68,6 +69,11 @@ class Token
     return $this->toToken($payload);
   }
 
+  /**
+   * Authenticate token and export User from token
+   * @param $token
+   * @return null
+   */
   public function fromToken($token) {
     $jws = JWS::load($token);
 
@@ -81,6 +87,11 @@ class Token
     return $user;
   }
 
+  /**
+   * Generate token from payload
+   * @param $payload
+   * @return string
+   */
   public function toToken($payload) {
     $this->jws->setHeader($this->header);
     $this->jws->setPayload($payload);
