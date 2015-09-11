@@ -1,6 +1,7 @@
 <?php
 
 namespace tuanlq11\token;
+use App\User;
 use Namshi\JOSE\JWS;
 use Namshi\JOSE\JWT;
 
@@ -19,10 +20,25 @@ class Token
   /** @var  String */
   protected $header;
 
+  /** @var  String */
+  protected $alg;
+
+  /** @var  String */
+  protected $identify;
+
+  /** @var  String */
+  protected $secret;
+
   function __construct()
   {
-    $header = ['alg' => \Config::get('token')];
-    $this->jws = new JWS($header);
+    $this->alg = \Config::get('token.alg');
+    $this->identify = \Config::get('token.identify');
+    $this->header = ['alg' => $this->alg];
+    $this->secret = \Config::get('token.secret');
+
+    $this->jws = new JWS($this->header);
+
+    return $this;
   }
 
   /**
@@ -35,17 +51,20 @@ class Token
       return false;
     }
 
-    return $this->toToken($credentials);
+    $user = User::whereEmail($credentials[$this->identify]);
+
+    $payload = ['uid' => $user->{$this->identify}, 'alg' => \Config::get('token.')];
+
+    return $this->toToken($payload, $user->password);
   }
 
   public function fromToken() {
 
   }
 
-  public function toToken($credentials) {
-    $key = \Config::get('token', 'default');
+  public function toToken($payload, $password = null) {
 
-    echo $this->jws->getSignature();
+    $this->jws->setPayload($payload)->sign($this->secret, $password);
 
   }
 
