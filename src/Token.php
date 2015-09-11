@@ -33,6 +33,8 @@ class Token
   /** @var  Integer */
   protected $ttl;
 
+  const PREFIX_CACHE_KEY = 'tuanlq11.token.blacklist.';
+
   function __construct()
   {
     $this->alg = \Config::get('token.alg');
@@ -82,8 +84,8 @@ class Token
    * @return bool|User
    */
   public function fromToken($token) {
-    $key = 'tuanlq11.token.blacklist.' . $token;
-    
+    $key = self::PREFIX_CACHE_KEY . $token;
+
     if(\Cache::has($token)) {
       return false;
     }
@@ -105,7 +107,7 @@ class Token
       $newToken = $this->attempt(array_only($user->toArray(), [$this->identify, 'password']));
 
       // Blacklist
-      $key = 'tuanlq11.token.blacklist.' . $token;
+      $key = self::PREFIX_CACHE_KEY . $token;
       \Cache::put($key, [], Carbon::now()->addSecond($this->ttl));
       // End
 
