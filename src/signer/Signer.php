@@ -121,8 +121,8 @@ class Signer
   }
 
   /**
-   * @param $input
-   * @param $key
+   * @param $token
+   * @param $secret
    * @return bool|mixed
    */
   public function verify($token, $secret)
@@ -144,7 +144,7 @@ class Signer
     $alg = $header['alg'];
     $encoder = $this->getSigner($alg);
 
-    if ($encoder->verify($secret, $signInput, $payloadJSON)) {
+    if ($encoder->verify($secret, $signInput, $payloadJSON) && $payload['exp'] > time()) {
       return $payload;
     }
 
