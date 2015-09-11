@@ -63,16 +63,20 @@ class Token
       'domain' => \Request::root()
     ];
 
-    return $this->toToken($payload, $user->password);
+    return $this->toToken($payload);
   }
 
-  public function fromToken() {
+  public function fromToken($token) {
+    $jws = JWS::load($token);
+
+    print_r($jws->verify($this->secret));
+    exit;
   }
 
-  public function toToken($payload, $password = null) {
+  public function toToken($payload) {
     $this->jws->setHeader($this->header);
     $this->jws->setPayload($payload);
-    $this->jws->sign($this->secret, $password);
+    $this->jws->sign($this->secret);
 
     return $this->jws->getTokenString();
   }
