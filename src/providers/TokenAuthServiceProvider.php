@@ -1,8 +1,12 @@
 <?php
 namespace tuanlq11\token\providers;
-
 use Illuminate\Support\ServiceProvider;
 
+/**
+ * Class TokenAuthServiceProvider
+ * @author tuanlq11
+ * @package tuanlq11\token\providers
+ */
 class TokenAuthServiceProvider extends ServiceProvider {
 
   /**

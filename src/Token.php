@@ -4,14 +4,16 @@ namespace tuanlq11\token;
 use App\User;
 use Namshi\JOSE\JWS;
 use Namshi\JOSE\JWT;
+use tuanlq11\token\signer\Signer;
 
 /**
  * Class Token
+ * @author tuanlq11
  * @package tuanlq11\token
  */
 class Token
 {
-  /** @var  JWS */
+  /** @var Signer */
   protected $jws;
 
   /** @var  JWT */
@@ -40,7 +42,7 @@ class Token
     $this->secret = \Config::get('token.secret');
     $this->ttl = \Config::get('token.ttl');
 
-    $this->jws = new JWS($this->header);
+    $this->jws = new Signer();
 
     return $this;
   }
