@@ -1,5 +1,6 @@
 <?php
-namespace tuanlq11\token\Signer\OpenSSL;
+
+namespace tuanlq11\token\signer\openssl;
 /**
  * Created by PhpStorm.
  * User: tuanlq11
@@ -10,7 +11,7 @@ class HS512 extends HMac
 {
   public function getAlg()
   {
-    return 'sha384';
+    return 'sha256';
   }
 
 }

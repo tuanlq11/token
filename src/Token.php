@@ -2,8 +2,6 @@
 
 namespace tuanlq11\token;
 use App\User;
-use Namshi\JOSE\JWS;
-use Namshi\JOSE\JWT;
 use tuanlq11\token\signer\Signer;
 
 /**
@@ -13,7 +11,7 @@ use tuanlq11\token\signer\Signer;
  */
 class Token
 {
-  /** @var Signer */
+  /** @var Signer  */
   protected $jws;
 
   /** @var  JWT */

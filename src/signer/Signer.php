@@ -30,7 +30,7 @@ class Signer
    */
   protected function getSigner($alg)
   {
-    $signerStr = sprintf('tuanlq11\\token\\Signer\\OpenSSL\\%s', strtoupper($alg));
+    $signerStr = sprintf('tuanlq11\\token\\signer\\openssl\\%s', strtoupper($alg));
     if (class_exists($signerStr)) {
       return new $signerStr;
     }

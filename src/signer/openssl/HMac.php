@@ -1,6 +1,6 @@
 <?php
 
-namespace tuanlq11\token\Signer\OpenSSL;
+namespace tuanlq11\token\signer\openssl;
 /**
  * Created by PhpStorm.
  * User: tuanlq11
