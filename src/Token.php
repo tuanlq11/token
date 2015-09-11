@@ -2,6 +2,7 @@
 
 namespace tuanlq11\token;
 use Namshi\JOSE\JWS;
+use Namshi\JOSE\JWT;
 
 /**
  * Class Token
@@ -9,9 +10,20 @@ use Namshi\JOSE\JWS;
  */
 class Token
 {
+  /** @var  JWS */
   protected $jws;
 
+  /** @var  JWT */
   protected $jwt;
+
+  /** @var  String */
+  protected $header;
+
+  function __construct()
+  {
+    $header = ['alg' => \Config::get('token')];
+    $this->jws = new JWS($header);
+  }
 
   /**
    * @param $credentials
@@ -32,7 +44,9 @@ class Token
 
   public function toToken($credentials) {
     $key = \Config::get('token', 'default');
-//    $this->jws = new JWS();
+
+    echo $this->jws->getSignature();
+
   }
 
 }
