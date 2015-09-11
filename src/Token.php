@@ -69,8 +69,14 @@ class Token
   public function fromToken($token) {
     $jws = JWS::load($token);
 
-    print_r($jws->verify($this->secret));
-    exit;
+    if(!$jws->verify($this->secret)) {
+      return null;
+    }
+
+    $payload = $jws->getPayload();
+    $user = User::where($this->identify, '=', $payload['uid']);
+
+    return $user;
   }
 
   public function toToken($payload) {
