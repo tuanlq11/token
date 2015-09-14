@@ -35,6 +35,9 @@ class Token
     /** @var  Integer */
     protected $ttl;
 
+    /** @var  bool */
+    protected $encrypt;
+
     /** Static prefix cache key */
     const PREFIX_CACHE_KEY = 'tuanlq11.token.blacklist.';
 
@@ -137,12 +140,29 @@ class Token
         $this->ttl = $ttl;
     }
 
+    /**
+     * @return boolean
+     */
+    public function isEncrypt()
+    {
+        return $this->encrypt;
+    }
+
+    /**
+     * @param boolean $encrypt
+     */
+    public function setEncrypt($encrypt)
+    {
+        $this->encrypt = $encrypt;
+    }
+
     function __construct()
     {
         $this->setAlg(Config::get('token.alg'));
         $this->setIdentify(Config::get('token.identify'));
         $this->setSecret(Config::get('token.secret'));
         $this->setTtl(Config::get('token.ttl'));
+        $this->setEncrypt(Config::get('token.encrypt'));
 
         return $this;
     }
@@ -189,7 +209,7 @@ class Token
         $token = $token ? $token : \Input::get('token');
 
         try {
-            $token = Crypt::decrypt($token);
+            $token = $this->isEncrypt()?Crypt::decrypt($token):$token;
         } catch (DecryptException $e) {
             return false;
         }
@@ -245,7 +265,10 @@ class Token
         $signer->setPayload($payload);
         $signer->sign($this->getSecret());
 
-        return Crypt::encrypt($signer->getTokenString());
+        $token = $signer->getTokenString();
+        $token = $this->isEncrypt()?Crypt::encrypt($token):$token;
+
+        return $token;
     }
 
 }
