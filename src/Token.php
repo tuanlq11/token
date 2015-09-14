@@ -4,9 +4,11 @@ namespace tuanlq11\token;
 
 use App\User;
 use Carbon\Carbon;
+use Illuminate\Contracts\Encryption\DecryptException;
 use tuanlq11\token\signer\Signer;
 use Cache;
 use Config;
+use Crypt;
 
 /**
  * Class Token
@@ -186,13 +188,19 @@ class Token
     {
         $token = $token ? $token : \Input::get('token');
 
+        try {
+            $token = Crypt::decrypt($token);
+        } catch (DecryptException $e) {
+            return false;
+        }
+
         $key = self::PREFIX_CACHE_KEY . $token;
 
         if (Cache::has($key)) {
             return false;
         }
 
-        if(!($signer = Signer::getInstance($token))) {
+        if (!($signer = Signer::getInstance($token))) {
             return false;
         }
 
@@ -237,7 +245,7 @@ class Token
         $signer->setPayload($payload);
         $signer->sign($this->getSecret());
 
-        return $signer->getTokenString();
+        return Crypt::encrypt($signer->getTokenString());
     }
 
 }
