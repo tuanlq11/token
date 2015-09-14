@@ -192,7 +192,9 @@ class Token
             return false;
         }
 
-        $signer = Signer::getInstance($token);
+        if(!($signer = Signer::getInstance($token))) {
+            return false;
+        }
 
         if (($payload = $signer->verify($this->getSecret()))) {
             return User::where($this->getIdentify(), '=', $payload->getUid())->first();
