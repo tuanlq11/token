@@ -177,7 +177,7 @@ class Payload
     public function fromArray($data)
     {
         if (!is_array($data))
-            return;
+            return $this;
 
         return $this->setDomain(isset($data['domain']) ? $data['domain'] : null)
             ->setIp(isset($data['ip']) ? $data['ip'] : null)
