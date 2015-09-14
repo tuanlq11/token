@@ -5,6 +5,8 @@ namespace tuanlq11\token;
 use App\User;
 use Carbon\Carbon;
 use tuanlq11\token\signer\Signer;
+use Cache;
+use Config;
 
 /**
  * Class Token
@@ -13,157 +15,227 @@ use tuanlq11\token\signer\Signer;
  */
 class Token
 {
-  /** @var Signer */
-  protected $jws;
+    /** @var Signer */
+    protected $signer;
 
-  /** @var  JWT */
-  protected $jwt;
+    /** @var  JWT */
+    protected $jwt;
 
-  /** @var  String */
-  protected $header;
+    /** @var  String */
+    protected $alg;
 
-  /** @var  String */
-  protected $alg;
+    /** @var  String */
+    protected $identify;
 
-  /** @var  String */
-  protected $identify;
+    /** @var  String */
+    protected $secret;
 
-  /** @var  String */
-  protected $secret;
+    /** @var  Integer */
+    protected $ttl;
 
-  /** @var  Integer */
-  protected $ttl;
+    /** Static prefix cache key */
+    const PREFIX_CACHE_KEY = 'tuanlq11.token.blacklist.';
 
-  const PREFIX_CACHE_KEY = 'tuanlq11.token.blacklist.';
+    /** @var  Token */
+    private static $instance;
 
-  function __construct()
-  {
-    $this->alg = \Config::get('token.alg');
-    $this->identify = \Config::get('token.identify');
-    $this->header = ['alg' => $this->alg];
-    $this->secret = \Config::get('token.secret');
-    $this->ttl = \Config::get('token.ttl');
-
-    $this->jws = new Signer();
-
-    return $this;
-  }
-
-  /** @var  Token */
-  private static $instance;
-
-  /**
-   * Generate instance for static
-   * @return Token
-   */
-  public static function getInstance() {
-    if(self::$instance == null){
-      self::$instance = new Token();
+    /**
+     * @return Signer
+     */
+    public function getSigner()
+    {
+        return $this->signer;
     }
 
-    return self::$instance;
-  }
-
-  /**
-   * Generate new salt
-   */
-  protected function generateSalt($uid)
-  {
-    return md5($uid) . hash_hmac('sha256', str_random(32) . time() . $this->secret, str_random());
-  }
-
-  /**
-   * Authenticate Credentials and generate token
-   * @param $credentials
-   * @return bool
-   */
-  public function attempt($credentials)
-  {
-    if (!\Auth::once($credentials)) {
-      return false;
+    /**
+     * @param Signer $signer
+     */
+    public function setSigner($signer)
+    {
+        $this->signer = $signer;
     }
 
-    $user = User::whereEmail($credentials[$this->identify])->first();
-    $uid = $user->{$this->identify};
-
-    $payload = $this->getPayload($uid, time() + $this->ttl);
-
-    return $this->toToken($payload);
-  }
-
-  /**
-   * Generate new Payload
-   * @param $uid
-   * @param $exp
-   * @return array
-   */
-  protected function getPayload($uid, $exp)
-  {
-    $payload = [
-      'uid' => $uid,
-      'exp' => $exp,
-      'domain' => \Request::root(),
-      'salt' => $this->generateSalt($uid)
-    ];
-
-    return $payload;
-  }
-
-  /**
-   * @param $token
-   * @return bool|User
-   */
-  public function fromToken($token = null)
-  {
-    $token = $token?$token:\Input::get('token');
-
-    $key = self::PREFIX_CACHE_KEY . $token;
-
-    if (\Cache::has($key)) {
-      return false;
+    /**
+     * @return JWT
+     */
+    public function getJwt()
+    {
+        return $this->jwt;
     }
 
-    if (($payload = $this->jws->verify($token, $this->secret))) {
-      return User::where($this->identify, '=', $payload['uid'])->first();
+    /**
+     * @param JWT $jwt
+     */
+    public function setJwt($jwt)
+    {
+        $this->jwt = $jwt;
     }
 
-    return false;
-  }
-
-  /**
-   * @param $token
-   * @return bool
-   */
-  public function refresh($token)
-  {
-    if ($user = $this->fromToken($token)) {
-      $uid = $user->{$this->identify};
-      $payload = $this->getPayload($uid, time() + $this->ttl);
-      $newToken = $this->toToken($payload);
-
-      // Blacklist
-      $key = self::PREFIX_CACHE_KEY . $token;
-      \Cache::put($key, [], Carbon::now()->addSecond($this->ttl));
-      // End
-
-      return $newToken;
+    /**
+     * @return String
+     */
+    public function getAlg()
+    {
+        return $this->alg;
     }
 
-    return false;
-  }
+    /**
+     * @param String $alg
+     */
+    public function setAlg($alg)
+    {
+        $this->alg = $alg;
+    }
 
-  /**
-   * Generate token from payload
-   * @param $payload
-   * @return string
-   */
-  public function toToken($payload)
-  {
-    $this->jws->setHeader($this->header);
-    $this->jws->setPayload($payload);
-    $this->jws->sign($this->secret);
+    /**
+     * @return String
+     */
+    public function getIdentify()
+    {
+        return $this->identify;
+    }
 
-    return $this->jws->getTokenString();
-  }
+    /**
+     * @param String $identify
+     */
+    public function setIdentify($identify)
+    {
+        $this->identify = $identify;
+    }
+
+    /**
+     * @return String
+     */
+    public function getSecret()
+    {
+        return $this->secret;
+    }
+
+    /**
+     * @param String $secret
+     */
+    public function setSecret($secret)
+    {
+        $this->secret = $secret;
+    }
+
+    /**
+     * @return int
+     */
+    public function getTtl()
+    {
+        return $this->ttl;
+    }
+
+    /**
+     * @param int $ttl
+     */
+    public function setTtl($ttl)
+    {
+        $this->ttl = $ttl;
+    }
+
+    function __construct()
+    {
+        $this->setAlg(Config::get('token.alg'));
+        $this->setIdentify(Config::get('token.identify'));
+        $this->setSecret(Config::get('token.secret'));
+        $this->setTtl(Config::get('token.ttl'));
+
+        return $this;
+    }
+
+    /**
+     * Generate instance for static
+     * @return Token
+     */
+    public static function getInstance()
+    {
+        if (self::$instance == null) {
+            self::$instance = new Token();
+        }
+
+        return self::$instance;
+    }
+
+    /**
+     * Authenticate Credentials and generate token
+     * @param $credentials
+     * @return bool
+     */
+    public function attempt($credentials)
+    {
+        if (!\Auth::once($credentials)) {
+            return false;
+        }
+
+        $user = User::whereEmail($credentials[$this->getIdentify()])->first();
+        $uid = $user->{$this->getIdentify()};
+
+        $payload = new Payload($uid, time() + $this->getTtl());
+        $payload->generateSalt($this->getSecret());
+
+        return $this->toToken($payload);
+    }
+
+    /**
+     * @param $token
+     * @return bool|User
+     */
+    public function fromToken($token = null)
+    {
+        $token = $token ? $token : \Input::get('token');
+
+        $key = self::PREFIX_CACHE_KEY . $token;
+
+        if (Cache::has($key)) {
+            return false;
+        }
+
+        $signer = Signer::getInstance($token);
+
+        if (($payload = $signer->verify($this->getSecret()))) {
+            return User::where($this->getIdentify(), '=', $payload->getUid())->first();
+        }
+
+        return false;
+    }
+
+    /**
+     * @param $token
+     * @return bool
+     */
+    public function refresh($token)
+    {
+        if ($user = $this->fromToken($token)) {
+            $uid = $user->{$this->getIdentify()};
+            $payload = new Payload($uid, time() + $this->getTtl());
+            $newToken = $this->toToken($payload);
+
+            // Blacklist
+            $key = self::PREFIX_CACHE_KEY . $token;
+            Cache::put($key, [], Carbon::now()->addSecond($this->getTtl()));
+            // End
+
+            return $newToken;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param $payload Payload
+     * @return string
+     */
+    protected function toToken($payload)
+    {
+        $signer = new Signer();
+        $signer->setHeader(['alg' => $this->getAlg()]);
+        $signer->setEncoder($signer->getEncoderInstance());
+        $signer->setPayload($payload);
+        $signer->sign($this->getSecret());
+
+        return $signer->getTokenString();
+    }
 
 }

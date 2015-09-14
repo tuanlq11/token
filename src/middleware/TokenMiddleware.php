@@ -4,6 +4,7 @@ namespace tuanlq11\token\middleware;
 
 use tuanlq11\token\Token;
 use Closure;
+use Response;
 
 /**
  * Created by PhpStorm.
@@ -18,12 +19,12 @@ class TokenMiddleware
     $token = $request->get('token', false);
 
     if (!$token) {
-      return \Response::json(['error' => 'Token is empty.']);
+      return Response::json(['error' => 'Token is empty.']);
     }
 
     $tokenMgr = new Token();
     if (!$tokenMgr->fromToken($token)) {
-      return \Response::json(['error' => 'Token is invalid or exired']);
+      return Response::json(['error' => 'Token is invalid or exired']);
     }
 
     return $next($request);
