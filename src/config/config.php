@@ -4,5 +4,6 @@ return [
   'alg'  => env('TOKEN_ALG', 'HS256'),
   'identify' => env('TOKEN_IDENTIFY', 'email'),
   'ttl' => env('TOKEN_TTL', 300), // Second,
-  'encrypt' => env('TOKEN_ENCRYPT', true)
+  'encrypt' => env('TOKEN_ENCRYPT', true),
+  'error-code' => env('TOKEN_ERROR_CODE', 1)
 ];

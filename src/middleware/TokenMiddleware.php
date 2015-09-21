@@ -16,15 +16,22 @@ class TokenMiddleware
 {
   public function handle($request, Closure $next)
   {
+    $result = [
+      'error' => \Config::get('token.error-code'),
+      'message' => '',
+    ];
+
     $token = $request->get('token', false);
 
     if (!$token) {
-      return Response::json(['error' => 'Token is empty.']);
+      $result['message'] = 'Token is empty';
+      return Response::json($result);
     }
 
     $tokenMgr = new Token();
     if (!$tokenMgr->fromToken($token)) {
-      return Response::json(['error' => 'Token is invalid or exired']);
+      $result['message'] = 'Token is invalid or exired';
+      return Response::json($result);
     }
 
     return $next($request);
