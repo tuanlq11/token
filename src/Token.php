@@ -17,6 +17,9 @@ use Crypt;
  */
 class Token
 {
+    /** @var String */
+    protected $remember_token;
+
     /** @var Signer */
     protected $signer;
 
@@ -34,6 +37,9 @@ class Token
 
     /** @var  Integer */
     protected $ttl;
+
+    /** @var  Integer */
+    protected $blacklist_ttl;
 
     /** @var  bool */
     protected $encrypt;
@@ -156,12 +162,58 @@ class Token
         $this->encrypt = $encrypt;
     }
 
+    /**
+     * @return String
+     */
+    public function getRememberToken()
+    {
+        return $this->remember_token;
+    }
+
+    /**
+     * @param $remember_token
+     * @return $this
+     */
+    public function setRememberToken($remember_token)
+    {
+        $this->remember_token = $remember_token;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getBlacklistTtl()
+    {
+        return $this->blacklist_ttl;
+    }
+
+    /**
+     * @param int $blacklist_ttl
+     */
+    public function setBlacklistTtl($blacklist_ttl)
+    {
+        $this->blacklist_ttl = $blacklist_ttl;
+    }
+
+    /**
+     * Generate remember token
+     * @param string $uid
+     * @return string
+     */
+    public function generateRememberToken($uid = '')
+    {
+        $this->setRememberToken(md5(time() . $uid . str_random()));
+        return $this->getRememberToken();
+    }
+
     function __construct()
     {
         $this->setAlg(Config::get('token.alg'));
         $this->setIdentify(Config::get('token.identify'));
         $this->setSecret(Config::get('token.secret'));
         $this->setTtl(Config::get('token.ttl'));
+        $this->setBlacklistTtl(Config::get('token.ttl_blacklist'));
         $this->setEncrypt(Config::get('token.encrypt'));
 
         return $this;
@@ -194,13 +246,18 @@ class Token
         $user = User::whereEmail($credentials[$this->getIdentify()])->first();
         $uid = $user->{$this->getIdentify()};
 
-        $payload = new Payload($uid, time() + $this->getTtl());
+        /** Remember Token */
+        $remember_token = $this->generateRememberToken($uid);
+        /** End */
+
+        $payload = new Payload($uid, time() + $this->getTtl(), null, null, null, $remember_token);
         $payload->generateSalt($this->getSecret());
 
         return $this->toToken($payload);
     }
 
     /**
+     * Response User from token
      * @param $token
      * @return bool|User
      */
@@ -209,7 +266,7 @@ class Token
         $token = $token ? $token : \Input::get('token');
 
         try {
-            $token = $this->isEncrypt()?Crypt::decrypt($token):$token;
+            $token = $this->isEncrypt() ? Crypt::decrypt($token) : $token;
         } catch (DecryptException $e) {
             return false;
         }
@@ -224,11 +281,62 @@ class Token
             return false;
         }
 
-        if (($payload = $signer->verify($this->getSecret()))) {
+        $result = $signer->verify($this->getSecret());
+        /** @var Payload $payload */
+        $payload = $result['data'];
+        if ($result['error'] == 0) {
             return User::where($this->getIdentify(), '=', $payload->getUid())->first();
         }
 
         return false;
+    }
+
+    /**
+     * Response User && Remember Token from token
+     * error code: 0 - pass; 1 - invalid; 2 - remember
+     * @param $token
+     * @return bool|User
+     */
+    public function fromTokenFull($token = null)
+    {
+        $key = self::PREFIX_CACHE_KEY . $token;
+        $result = ['error' => 1, 'data' => null];
+
+        $token = $token ? $token : \Input::get('token');
+        $remember_token = \Input::get('remember_token', false);
+
+        try {
+            $token = $this->isEncrypt() ? Crypt::decrypt($token) : $token;
+        } catch (DecryptException $e) {
+            return false;
+        }
+
+        if (Cache::has($key)) {
+            return false;
+        }
+
+        if (!($signer = Signer::getInstance($token))) {
+            return false;
+        }
+
+        $payloadResult = $signer->verify($this->getSecret(), $remember_token);
+        /** @var Payload $payload */
+        $payload = $payloadResult['data'];
+        if ($payloadResult['error'] == 0) {
+            $result['error'] = 0;
+            $result['data'] = User::where($this->getIdentify(), '=', $payload->getUid())->first();
+            return $result;
+        }
+
+        /** Use remember token */
+        if ($payloadResult['error'] == 2) {
+            $result['error'] = 2;
+            $result['data'] = User::where($this->getIdentify(), '=', $payload->getUid())->first();
+            return $result;
+        }
+        /** End */
+
+        return $result;
     }
 
     /**
@@ -237,14 +345,22 @@ class Token
      */
     public function refresh($token)
     {
-        if ($user = $this->fromToken($token)) {
+        $valid = $this->fromTokenFull($token);
+
+        if ($valid['error'] != 1) {
+            $user = $valid['data'];
             $uid = $user->{$this->getIdentify()};
-            $payload = new Payload($uid, time() + $this->getTtl());
+
+            /** Remember Token */
+            $remember_token = $this->generateRememberToken($uid);
+            /** End */
+
+            $payload = new Payload($uid, time() + $this->getTtl(), null, null, null, $remember_token);
             $newToken = $this->toToken($payload);
 
             // Blacklist
             $key = self::PREFIX_CACHE_KEY . $token;
-            Cache::put($key, [], Carbon::now()->addSecond($this->getTtl()));
+            Cache::put($key, [], Carbon::now()->addSecond($this->getBlacklistTtl()));
             // End
 
             return $newToken;
@@ -266,7 +382,7 @@ class Token
         $signer->sign($this->getSecret());
 
         $token = $signer->getTokenString();
-        $token = $this->isEncrypt()?Crypt::encrypt($token):$token;
+        $token = $this->isEncrypt() ? Crypt::encrypt($token) : $token;
 
         return $token;
     }

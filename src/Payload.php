@@ -28,6 +28,9 @@ class Payload
     /** @var  string */
     protected $domain;
 
+    /** @var  string */
+    protected $remember_token;
+
     /**
      * Payload constructor.
      * @param int $exp
@@ -36,13 +39,14 @@ class Payload
      * @param string $salt
      * @param string $domain
      */
-    public function __construct($uid = null, $exp = null, $ip = null, $domain = null, $salt = null)
+    public function __construct($uid = null, $exp = null, $ip = null, $domain = null, $salt = null, $remember_token = null)
     {
         $this->exp = $exp;
         $this->uid = $uid;
         $this->ip = $ip;
         $this->salt = $salt;
         $this->domain = $domain;
+        $this->remember_token = $remember_token;
 
         return $this;
     }
@@ -148,6 +152,25 @@ class Payload
     }
 
     /**
+     * @return string
+     */
+    public function getRememberToken()
+    {
+        return $this->remember_token;
+    }
+
+    /**
+     * @param $remember_token
+     * @return $this
+     */
+    public function setRememberToken($remember_token)
+    {
+        $this->remember_token = $remember_token;
+        return $this;
+    }
+
+
+    /**
      * Generate new salt
      * @param string $secret
      * @return $this
@@ -183,7 +206,8 @@ class Payload
             ->setIp(isset($data['ip']) ? $data['ip'] : null)
             ->setExp(isset($data['exp']) ? $data['exp'] : null)
             ->setSalt(isset($data['salt']) ? $data['salt'] : null)
-            ->setUid(isset($data['uid']) ? $data['uid'] : null);
+            ->setUid(isset($data['uid']) ? $data['uid'] : null)
+            ->setRememberToken(isset($data['remember_token']) ? $data['remember_token'] : null);
     }
 
     /**
@@ -200,7 +224,8 @@ class Payload
             'exp' => $this->getExp(),
             'ip' => $this->getIp(),
             'domain' => $this->getDomain(),
-            'salt' => $this->getSalt()
+            'salt' => $this->getSalt(),
+            'remember_token' => $this->getRememberToken()
         ];
 
         if ($shuffle) {
