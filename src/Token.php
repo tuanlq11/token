@@ -235,15 +235,26 @@ class Token
     /**
      * Authenticate Credentials and generate token
      * @param $credentials
+     * @param $identify
      * @return bool
      */
-    public function attempt($credentials)
+    public function attempt($credentials, $identify = 'email')
     {
-        if (!\Auth::once($credentials)) {
+        $identifyVal = isset($credentials[$identify]) ? $credentials[$identify] : null;
+        /** @var Collection $user */
+        $user = User::where($identify, '=', $identifyVal)->get();
+
+        if ($user->isEmpty()) {
             return false;
         }
 
-        $user = User::whereEmail($credentials[$this->getIdentify()])->first();
+        /** @var User $user */
+        $user = $user->first();
+
+        if (!\Hash::check($credentials['password'], $user->password)) {
+            return false;
+        }
+
         $uid = $user->{$this->getIdentify()};
 
         /** Remember Token */
