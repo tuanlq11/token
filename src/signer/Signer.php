@@ -184,12 +184,12 @@ class Signer
         $signVerify = $this->encoder->verify($secret, $this->getSignature(), $this->getPayload()->toJSON(false));
         $expVerify = (is_numeric($this->getPayload()->getExp()) ? $this->getPayload()->getExp() : 0) > time();
         $domainVerify = $this->getPayload()->getDomain() == \Request::root();
-        $ipVerify = $this->getPayload()->getIp() == \Request::getClientIp();
+        // $ipVerify = $this->getPayload()->getIp() == \Request::getClientIp();
         $rememberVerify = ($remember_token == $this->getPayload()->getRememberToken());
 
         $result = ['error' => 1, 'data' => $this->getPayload()];
 
-        if ($signVerify && $domainVerify && $ipVerify) {
+        if ($signVerify && $domainVerify) {
             if ($expVerify) {
                 $result['error'] = 0;
             } else if (!$expVerify && $rememberVerify) {
